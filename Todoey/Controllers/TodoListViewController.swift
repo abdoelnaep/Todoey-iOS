@@ -4,16 +4,20 @@
 
 //
 
+import CoreData
 import UIKit
 
 class TodoListViewController: UITableViewController {
 //    var itemArray = ["Find Mike", "Buy Eggos", "Destory Demogorgon"]
-    var itemArray = [item]()
+    
+    let context = (UIApplication.shared.delegate as! AppDelegate).persistentContainer.viewContext
+
+    var itemArray = [Item]()
 
     let defauls = UserDefaults.standard
     
-    let dataFilePath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first?.appendingPathComponent("items.plist")
-    
+//    let dataFilePath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first?.appendingPathComponent("items.plist")
+//
     override func viewDidLoad() {
         super.viewDidLoad()
         
@@ -62,7 +66,7 @@ class TodoListViewController: UITableViewController {
     
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         // print(itemArray[indexPath.row])
-        
+
         itemArray[indexPath.row].done = !itemArray[indexPath.row].done
         saveData()
 //        if tableView.cellForRow(at: indexPath)?.accessoryType == .checkmark {
@@ -70,7 +74,7 @@ class TodoListViewController: UITableViewController {
 //        } else {
 //            tableView.cellForRow(at: indexPath)?.accessoryType = .checkmark
 //        }
-      
+
         tableView.deselectRow(at: indexPath, animated: true)
     }
     
@@ -80,8 +84,11 @@ class TodoListViewController: UITableViewController {
         let alert = UIAlertController(title: "Add New Task", message: "", preferredStyle: .alert)
         let action = UIAlertAction(title: "Add Task", style: .default) { _ in
           
-            let newItem = item()
+            let newItem = Item(context: self.context)
+            //    let newItem = item()
+            
             newItem.title = textField.text!
+            newItem.done = false
             
             self.itemArray.append(newItem)
             self.saveData()
@@ -98,26 +105,52 @@ class TodoListViewController: UITableViewController {
         present(alert, animated: true, completion: nil)
     }
     
+    override func tableView(_ tableView: UITableView, canEditRowAt indexPath: IndexPath) -> Bool {
+        return true
+    }
+    
+    override func tableView(_ tableView: UITableView, commit editingStyle: UITableViewCell.EditingStyle, forRowAt indexPath: IndexPath) {
+        if editingStyle == .delete {
+            context.delete(itemArray[indexPath.row])
+            itemArray.remove(at: indexPath.row)
+            
+            tableView.reloadData()
+        }
+    }
+    
     func saveData() {
-        print("cool")
-        let encoder = PropertyListEncoder()
+//        print("cool")
+//        let encoder = PropertyListEncoder()
+        
         do {
-            let data = try encoder.encode(itemArray)
-            try data.write(to: dataFilePath!)
+//            let data = try encoder.encode(itemArray)
+//            try data.write(to: dataFilePath!)
+            try context.save()
+        
         } catch {
-            print("Error encoding item array, \(error)")
+            // print("Error encoding item array, \(error)")
+            print("Error saving context, \(error)")
         }
         tableView.reloadData()
     }
     
     func loadItems() {
-        if let data = try? Data(contentsOf: dataFilePath!) {
-            let decoder = PropertyListDecoder()
-            do {
-                itemArray = try decoder.decode([item].self, from: data)
-            } catch {
-                print("Error decoding item array, \(error)")
-            }
+        let request: NSFetchRequest<Item> = Item.fetchRequest()
+        do {
+            itemArray = try context.fetch(request)
+        } catch {
+            print("Error fetching data from context \(error)")
         }
     }
+    
+//    func loadItems() {
+//        if let data = try? Data(contentsOf: dataFilePath!) {
+//            let decoder = PropertyListDecoder()
+//            do {
+//                itemArray = try decoder.decode([Item].self, from: data)
+//            } catch {
+//                print("Error decoding item array, \(error)")
+//            }
+//        }
+//    }
 }
