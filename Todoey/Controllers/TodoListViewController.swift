@@ -108,14 +108,33 @@ class TodoListViewController: UITableViewController {
     override func tableView(_ tableView: UITableView, canEditRowAt indexPath: IndexPath) -> Bool {
         return true
     }
+
+    // another way for swipe to delete
+//    override func tableView(_ tableView: UITableView,  commit editingStyle: UITableViewCell.EditingStyle, forRowAt indexPath: IndexPath) {
+//        if editingStyle == .delete {
+//            context.delete(itemArray[indexPath.row])
+//            itemArray.remove(at: indexPath.row)
+//
+//            tableView.reloadData()
+//        }
+//    }
     
-    override func tableView(_ tableView: UITableView, commit editingStyle: UITableViewCell.EditingStyle, forRowAt indexPath: IndexPath) {
-        if editingStyle == .delete {
-            context.delete(itemArray[indexPath.row])
-            itemArray.remove(at: indexPath.row)
-            
+    override func tableView(_ tableView: UITableView, trailingSwipeActionsConfigurationForRowAt indexPath: IndexPath)
+        -> UISwipeActionsConfiguration?
+    {
+        let deleteAction = UIContextualAction(style: .destructive, title: nil) { _, _, completionHandler in
+            // delete the item here
+                
+            self.context.delete(self.itemArray[indexPath.row])
+            self.itemArray.remove(at: indexPath.row)
             tableView.reloadData()
+                
+            completionHandler(true)
         }
+        deleteAction.image = UIImage(systemName: "trash")
+        deleteAction.backgroundColor = .systemRed
+        let configuration = UISwipeActionsConfiguration(actions: [deleteAction])
+        return configuration
     }
     
     func saveData() {
@@ -134,16 +153,25 @@ class TodoListViewController: UITableViewController {
         tableView.reloadData()
     }
     
-    func loadItems() {
-        let request: NSFetchRequest<Item> = Item.fetchRequest()
+    func loadItems(with request: NSFetchRequest<Item> = Item.fetchRequest()) {
         do {
             itemArray = try context.fetch(request)
         } catch {
             print("Error fetching data from context \(error)")
         }
+        tableView.reloadData()
     }
     
-//    func loadItems() {
+//    func loadItems() {  // old code before search bar
+//        let request: NSFetchRequest<Item> = Item.fetchRequest()
+//        do {
+//            itemArray = try context.fetch(request)
+//        } catch {
+//            print("Error fetching data from context \(error)")
+//        }
+//    }
+    
+//    func loadItems() {  //this is for nscoder
 //        if let data = try? Data(contentsOf: dataFilePath!) {
 //            let decoder = PropertyListDecoder()
 //            do {
@@ -153,4 +181,19 @@ class TodoListViewController: UITableViewController {
 //            }
 //        }
 //    }
+}
+
+// MARK: - Search bar methods
+
+extension TodoListViewController: UISearchBarDelegate {
+    func searchBarSearchButtonClicked(_ searchBar: UISearchBar) {
+        
+        let request: NSFetchRequest<Item> = Item.fetchRequest()
+        
+        request.predicate = NSPredicate(format: "title CONTAINS [cd] %@", searchBar.text!)
+        
+        request.sortDescriptors = [NSSortDescriptor(key: "title", ascending: true)]
+      
+        loadItems(with: request)
+    }
 }
