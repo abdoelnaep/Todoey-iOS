@@ -186,14 +186,31 @@ class TodoListViewController: UITableViewController {
 // MARK: - Search bar methods
 
 extension TodoListViewController: UISearchBarDelegate {
-    func searchBarSearchButtonClicked(_ searchBar: UISearchBar) {
-        
-        let request: NSFetchRequest<Item> = Item.fetchRequest()
-        
-        request.predicate = NSPredicate(format: "title CONTAINS [cd] %@", searchBar.text!)
-        
-        request.sortDescriptors = [NSSortDescriptor(key: "title", ascending: true)]
-      
-        loadItems(with: request)
+    // this func caled when enter pressed
+//    func searchBarSearchButtonClicked(_ searchBar: UISearchBar) {
+//        let request: NSFetchRequest<Item> = Item.fetchRequest()
+//
+//        request.predicate = NSPredicate(format: "title CONTAINS [cd] %@", searchBar.text!) // [cd] refer to ignor case senstive and french and german signs
+//
+//        request.sortDescriptors = [NSSortDescriptor(key: "title", ascending: true)]
+//
+//        loadItems(with: request)
+//    }
+//
+    func searchBar(_ searchBar: UISearchBar, textDidChange searchText: String) {
+        if searchBar.text?.count == 0 {
+            loadItems()
+            DispatchQueue.main.async {
+                searchBar.resignFirstResponder()
+            }
+        } else {
+            let request: NSFetchRequest<Item> = Item.fetchRequest()
+            
+            request.predicate = NSPredicate(format: "title CONTAINS [cd] %@", searchBar.text!) // [cd] refer to ignor case senstive and french and german signs
+            
+            request.sortDescriptors = [NSSortDescriptor(key: "title", ascending: true)]
+          
+            loadItems(with: request)
+        }
     }
 }
